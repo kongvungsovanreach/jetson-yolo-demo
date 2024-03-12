@@ -1,4 +1,4 @@
-import cv2
+import cv2, time
 import argparse
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
@@ -24,6 +24,7 @@ def read_video(source, model_name):
         raise ValueError("Invalid source type. Please use --camera, --file.")
     
     print('[+] Start detection.')
+    prev_time = 0
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
@@ -31,6 +32,10 @@ def read_video(source, model_name):
         # Display the resulting frame
         if frame.size != 0:
             frame = model(frame, verbose=False, classes=[0, 2])[0].plot() #person and car
+            current_time = time.time()
+            fps = 1 / (current_time - prev_time)
+            prev_time = current_time
+            cv2.putText(frame, f'FPS: {fps:.2f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
