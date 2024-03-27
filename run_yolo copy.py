@@ -3,37 +3,6 @@ from modules.stream import Stream, StreamType
 import cv2, time, argparse, threading
 from modules.XEnum import StreamType, YoloModelType, SignalType
 from ultralytics import YOLO
-from modules.signal import Signal
-from modules.const import *
-import RPi.GPIO as GPIO
-
-#update signal
-def update_signal(signal_type, active=False):
-    try:
-        GPIO.setmode(GPIO.BCM)
-        if signal_type is SignalType.person:
-            GPIO.setup(PERSON_PIN_NUM, GPIO.OUT)
-            if active:
-                GPIO.output(PERSON_PIN_NUM, GPIO.HIGH)
-            else:
-                GPIO.output(PERSON_PIN_NUM, GPIO.LOW)
-
-        elif signal_type is SignalType.forklift:
-            GPIO.setup(FORKLIST_PIN_NUM, GPIO.OUT)
-            if active:
-                GPIO.output(FORKLIST_PIN_NUM, GPIO.HIGH)
-            else:
-                GPIO.output(FORKLIST_PIN_NUM, GPIO.LOW)
-    except:
-        print('[err]: GPIO encounters some errors.')
-    finally:
-        GPIO.cleanup()
-
-#thread declaration
-person_signal = Signal(SignalType.person)
-forklift_signal = Signal(SignalType.forklift)
-person_signal.set_callback(update_signal)
-forklift_signal.set_callback(update_signal)
 
 #load yolo model
 def load_model(model_name):
@@ -46,6 +15,14 @@ def load_model(model_name):
 def get_detected_cls(results):
     classes = [int(i.cls.cpu().numpy()) for i in results[0].boxes]
     return classes
+
+#update signal
+def update_signal(signal_type, active=False):
+    print(f'Single: {signal_type} | Active: {active}')
+
+def imshow_thread(frame):
+    cv2.imshow('Frame', frame)
+    cv2.waitKey(1)
 
 def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
     #load yolo model
@@ -63,7 +40,7 @@ def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
         'flip_method': 0 
     }
     cap = stream.get_capture(csi_config=csi_config)
-    print(f'[msg]: Completed opencv VideoCap. | Cap is opened: {cap.isOpened()}')
+    print(f'[msg]: Completed opencv VideoCap. | Cap is opended: {cap.isOpened()}')
 
     if not cap.isOpened():
         print('[msg]: cap is not opened!')
@@ -95,8 +72,10 @@ def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
             if elapsed_time >= 1.0:
                 #check detected class for alerting PLC LED light
                 detected_cls = get_detected_cls(results)
-                person_signal.active = True if 0 in detected_cls else False
-                forklift_signal.active = True if 2 in detected_cls else False
+                if 0 in detected_cls:
+                    print('[mg]: A person is detecte.')
+                if 2 in detected_cls:
+                    print('[msg]: a car is detected.')
 
                 fps = frame_count / elapsed_time
                 frame_count = 0
@@ -121,17 +100,16 @@ if __name__ == "__main__":
     parser.add_argument('--model', type=YoloModelType, default=YoloModelType.yolov8n, choices=list(YoloModelType),
                         help="Specify the Yolov8 models type.")
     args = parser.parse_args()
-    read_video(args.source, args.model)
 
-    # # Create threads
-    # yolo_thread = threading.Thread(target=read_video, args = (args.source, args.model))
-    # signal_thread = threading.Thread(target=update_signal, args=(SignalType.person,))
+    # Create threads
+    yolo_thread = threading.Thread(target=read_video, args=(args.source, args.model))
+    signal_thread = threading.Thread(target=update_signal, args=(SignalType.person,))
     
 
-    # # Start threads
-    # yolo_thread.start()
-    # signal_thread.start()
+    # Start threads
+    yolo_thread.start()
+    signal_thread.start()
 
-    # # Wait for threads to complete
-    # yolo_thread.join()
-    # signal_thread.join()
+    # Wait for threads to complete
+    yolo_thread.join()
+    signal_thread.join()

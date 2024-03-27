@@ -19,3 +19,10 @@ class YoloModelType(Enum):
 
     def __str__(self):
         return self.value
+
+class SignalType(Enum):
+    person = 'person'
+    forklift = 'forklift'
+
+    def __str__(self):
+        return self.value

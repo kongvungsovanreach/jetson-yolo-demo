@@ -56,3 +56,6 @@ class Stream():
             gp = gstreamer_pipeline(sensor_id=0, capture_width=capture_width, capture_height=capture_height, display_width=display_width, display_height=display_height,framerate=framerate,flip_method=flip_method)
             cap = cv2.VideoCapture(gp, cv2.CAP_GSTREAMER)
             return cap
+        elif self.stream_type is StreamType.usb:
+            cap = cv2.VideoCapture(0)
+            return cap

@@ -57,7 +57,7 @@ def img_capture(source = StreamType.csi, threshold = 10, folder_count = 10):
             #calculate the mean of the pixel differences
             mean_diff = frame_diff.mean()
 
-            #plot the infor on the frame
+            #plot the info on the frame
             cv2.putText(frame, f'FPS: {csi_config["frame_rate"]}  |  Threshold: {threshold}  |  Mean diff: {mean_diff:.2f}', (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.putText(frame, f'Frame saved count: {criteria_store["saved_count"]}', (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
