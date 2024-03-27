@@ -6,28 +6,72 @@ from ultralytics import YOLO
 from modules.signal import Signal
 from modules.const import *
 import RPi.GPIO as GPIO
+from threading import Thread
 
-#update signal
-def update_signal(signal_type, active=False):
+#send signal when person is detected
+def send_person_signal():
     try:
         GPIO.setmode(GPIO.BCM)
-        if signal_type is SignalType.person:
-            GPIO.setup(PERSON_PIN_NUM, GPIO.OUT)
-            if active:
-                GPIO.output(PERSON_PIN_NUM, GPIO.HIGH)
-            else:
-                GPIO.output(PERSON_PIN_NUM, GPIO.LOW)
-
-        elif signal_type is SignalType.forklift:
-            GPIO.setup(FORKLIST_PIN_NUM, GPIO.OUT)
-            if active:
-                GPIO.output(FORKLIST_PIN_NUM, GPIO.HIGH)
-            else:
-                GPIO.output(FORKLIST_PIN_NUM, GPIO.LOW)
-    except:
+        GPIO.setup(PERSON_PIN_NUM, GPIO.OUT)
+        while True:
+            GPIO.output(PERSON_PIN_NUM, ON if sending_person_signal else OFF)
+            time.sleep(0.1)
+    except Exception as e:
+        print(e)
         print('[err]: GPIO encounters some errors.')
     finally:
         GPIO.cleanup()
+
+#send signal when forklift is detected
+def send_forklift_signal():
+    try:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(FORKLIST_PIN_NUM, GPIO.OUT)
+        while True:
+            GPIO.output(FORKLIST_PIN_NUM, ON if sending_forklift_signal else OFF)
+            time.sleep(0.1)
+    except Exception as e:
+        print(e)
+        print('[err]: GPIO encounters some errors.')
+    finally:
+        GPIO.cleanup()
+
+#send signal for oup pin
+def send_oup_signal():
+    try:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(OUP_PIN_NUM, GPIO.OUT)
+        while True:
+            GPIO.output(OUP_PIN_NUM, ON)
+            time.sleep(0.1)
+    except Exception as e:
+        print(e)
+        print('[err]: GPIO encounters some errors.')
+    finally:
+        GPIO.cleanup()
+
+#threading for handling signal sending simultaneously
+person_signal_thread = Thread(target = send_person_signal)
+forklift_signal_thread = Thread(target = send_forklift_signal)
+oup_signal_thread = Thread(target = send_oup_signal)
+
+#start person and forklift thread
+person_signal_thread.start()
+forklift_signal_thread.start()
+oup_signal_thread.start()
+
+#variable for controlling ON/OFF signal
+sending_person_signal, sending_forklift_signal = False, False
+
+#update signal states when object is detected
+def update_signal(signal_type, active=False):
+    if signal_type is SignalType.person:
+        global sending_person_signal
+        sending_person_signal = True if active else False
+
+    elif signal_type is SignalType.forklift:
+        global sending_forklift_signal
+        sending_forklift_signal = True if active else False
 
 #thread declaration
 person_signal = Signal(SignalType.person)
@@ -59,7 +103,7 @@ def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
         'capture_h': 1080,
         'display_w': 1920,
         'display_h': 1080,
-        'frame_rate': 30,
+        'frame_rate': 10,
         'flip_method': 0 
     }
     cap = stream.get_capture(csi_config=csi_config)
@@ -122,16 +166,3 @@ if __name__ == "__main__":
                         help="Specify the Yolov8 models type.")
     args = parser.parse_args()
     read_video(args.source, args.model)
-
-    # # Create threads
-    # yolo_thread = threading.Thread(target=read_video, args = (args.source, args.model))
-    # signal_thread = threading.Thread(target=update_signal, args=(SignalType.person,))
-    
-
-    # # Start threads
-    # yolo_thread.start()
-    # signal_thread.start()
-
-    # # Wait for threads to complete
-    # yolo_thread.join()
-    # signal_thread.join()
