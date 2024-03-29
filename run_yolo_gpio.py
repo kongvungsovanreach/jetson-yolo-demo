@@ -8,6 +8,10 @@ from modules.const import *
 import RPi.GPIO as GPIO
 from threading import Thread
 
+
+#variable for controlling ON/OFF signal
+sending_person_signal, sending_forklift_signal = False, False
+
 #send signal when person is detected
 def send_person_signal():
     try:
@@ -59,9 +63,6 @@ oup_signal_thread = Thread(target = send_oup_signal)
 person_signal_thread.start()
 forklift_signal_thread.start()
 oup_signal_thread.start()
-
-#variable for controlling ON/OFF signal
-sending_person_signal, sending_forklift_signal = False, False
 
 #update signal states when object is detected
 def update_signal(signal_type, active=False):

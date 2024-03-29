@@ -89,7 +89,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Read video from CSI camera, USB camera, or file.")
     parser.add_argument('--source', type=StreamType, default=StreamType.csi, choices=list(StreamType),
                         help="Specify the video source: 'csi' for CSI camera, 'usb' for USB camera, 'file' for video file")
-    parser.add_argument('--threshold', type=int, default=10,
+    parser.add_argument('--threshold', type=int, default=20,
                         help="Specify the threhold for frame saving. Ex: 20, 30, 40,...")
     
     parser.add_argument('--folder_count', type=int, default=10,
