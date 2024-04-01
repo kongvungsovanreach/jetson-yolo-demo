@@ -19,6 +19,7 @@ def send_person_signal():
         GPIO.setup(PERSON_PIN_NUM, GPIO.OUT)
         while True:
             GPIO.output(PERSON_PIN_NUM, ON if sending_person_signal else OFF)
+            #print('person is detecte')
             time.sleep(0.1)
     except Exception as e:
         print(e)
@@ -32,7 +33,8 @@ def send_forklift_signal():
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(FORKLIST_PIN_NUM, GPIO.OUT)
         while True:
-            GPIO.output(FORKLIST_PIN_NUM, ON if sending_forklift_signal else OFF)
+            GPIO.output(FORKLIST_PIN_NUM, ON if sending_person_signal else OFF)
+            #print('forklift is detecte')
             time.sleep(0.1)
     except Exception as e:
         print(e)
@@ -46,7 +48,8 @@ def send_oup_signal():
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(OUP_PIN_NUM, GPIO.OUT)
         while True:
-            GPIO.output(OUP_PIN_NUM, ON)
+            GPIO.output(OUP_PIN_NUM, ON if sending_person_signal else OFF)
+            #print('output is detecte')
             time.sleep(0.1)
     except Exception as e:
         print(e)
@@ -128,7 +131,7 @@ def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
         
         # Display the resulting frame
         if frame.size != 0:
-            results = model(frame, verbose=False, classes=[0, 2])
+            results = model(frame, verbose=False, classes=[0])
             frame = results[0].plot() #person and car
 
             #update for fps calculation
@@ -141,7 +144,7 @@ def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
                 #check detected class for alerting PLC LED light
                 detected_cls = get_detected_cls(results)
                 person_signal.active = True if 0 in detected_cls else False
-                forklift_signal.active = True if 2 in detected_cls else False
+                #forklift_signal.active = True if 2 in detected_cls else False
 
                 fps = frame_count / elapsed_time
                 frame_count = 0
