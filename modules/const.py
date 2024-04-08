@@ -1,5 +1,6 @@
 #import required modules
 import RPi.GPIO as GPIO
+from modules.const import ENV
 
 #GPIO pin numbers
 PERSON_PIN_NUM = 5
@@ -14,4 +15,4 @@ ON = GPIO.LOW
 PERSON_CLASS_NUM = 0
 FORKLIFT_CLASS_NUM = 2
 
-ENV=jetson
+ENV='jetson'
