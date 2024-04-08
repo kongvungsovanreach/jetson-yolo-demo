@@ -1,6 +1,7 @@
 #import required modules
 import cv2
 from .XEnum import StreamType
+from modules.const import ENV
 
 #gstreamer pipeline constructor
 def gstreamer_pipeline(

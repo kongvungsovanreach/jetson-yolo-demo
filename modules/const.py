@@ -1,6 +1,5 @@
 #import required modules
 import RPi.GPIO as GPIO
-from modules.const import ENV
 
 #GPIO pin numbers
 PERSON_PIN_NUM = 5
