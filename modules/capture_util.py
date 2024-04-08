@@ -55,3 +55,9 @@ class Config():
         else:
             #set a dynamic variable
             self._dynamic_variables[name] = value
+    
+def xmsg(text):
+    print(f'[msg]: {text}')
+    
+def xerr(text):
+    print(f'[err]: {text}')

@@ -1,19 +1,21 @@
 #import required modules
 from modules.stream import Stream, StreamType
 import cv2, time, argparse
+import numpy as np
 from modules.XEnum import StreamType, CaptureMethod
-from modules.capture_util import random_save, get_scaled_font, Config
+from modules.capture_util import random_save, get_scaled_font, Config, xmsg, xerr
+from modules.ui_helper import start_area_configuration
 
 #global vars
 config = Config()
+config.cam_window_size = (2560, 1440)
 config.show_window_size = (640, 480)
 config.criteria_store = {'prev_f_gray': None, 'saved_count': 0}
 config.font_size, config.font_thickness = None, None
 
 #load cap for capturing
 def load_local_cap(source, threshold, folder_count):
-    #load video cap
-    print('[msg]: start loading opencv VideoCap.')
+    xmsg('start loading opencv VideoCap.')
     stream = Stream(source)
     config.csi_config = {
         'capture_w': 1920,
@@ -24,10 +26,16 @@ def load_local_cap(source, threshold, folder_count):
         'flip_method': 0 
     }
     cap = stream.get_capture(csi_config=config.csi_config)
-    print(f'[msg]: completed opencv VideoCap. | Cap is opended: {cap.isOpened()}')
+
+    # Set desired resolution
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_window_size[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_window_size[1])
+    cap.set(cv2.CAP_PROP_FPS, 2)
+
+    xmsg(f'completed opencv VideoCap. | Cap is opended: {cap.isOpened()}.')
 
     if not cap.isOpened():
-        print('[msg]: cap is not opened!')
+        xmsg(' cap is not opened!')
         cap.release()
         cv2.destroyAllWindows()
         exit()
@@ -36,19 +44,34 @@ def load_local_cap(source, threshold, folder_count):
 #capture some frames from stream
 def img_capture(source = StreamType.csi, threshold = 10, folder_count = 10):
     cap = load_local_cap(source, threshold, folder_count)
-    print('[msg]: start capturing frames and save them.')
+    polygons, frame = start_area_configuration(cap, config.show_window_size)
+    xmsg('start capturing frames and save them.')
+
+    count = 0
     while True:
+        count += 1
         ret, frame = cap.read()
+        if (count % 30) != 0:
+            continue        
+
         oframe = frame.copy()
+        frame = cv2.resize(frame, config.show_window_size)
+
+        #loop through each polygon
+        for polygon_coords in polygons:
+            pts = np.array(polygon_coords, np.int32)
+            pts = pts.reshape((-1, 1, 2))
+            cv2.fillPoly(frame, [pts], (0, 0, 0))  #fill polygon with black color
+
         if not ret:
-            print('[err]: failed to read the stream')
+            xerr('failed to read the stream.')
             break
         
         #display the resulting frame
         if frame.size != 0:
             if not config.font_size:
                 config.font_size, config.font_thickness = get_scaled_font(frame.shape[1], frame.shape[0], size_ratio=0.9e-3, thickness_scale=2e-3)
-                print(f'[msg]: scaled font size & thickness: {config.font_size} | {config.font_thickness}')
+                xmsg(f'scaled font size & thickness: {config.font_size} | {config.font_thickness}.')
 
             #convert it to grayscale to ensure the efficiency
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -64,20 +87,17 @@ def img_capture(source = StreamType.csi, threshold = 10, folder_count = 10):
 
             #apply the fixed threshold value
             _, thresholded = cv2.threshold(frame_diff, 20, 255, cv2.THRESH_BINARY)
+            thresholded = cv2.resize(thresholded, config.show_window_size)
             
             #calculate the mean of the pixel differences
             mean_diff = frame_diff.mean()
 
-            #resize frames for plotting
-            frame = cv2.resize(frame, config.show_window_size)
-            thresholded = cv2.resize(thresholded, config.show_window_size)
-
             #draw rectangle as background color
-            cv2.rectangle(img = frame, 
-                          pt1 = (0, 0), 
-                          pt2 = (300, 70), 
-                          color = (255, 255, 255), 
-                          thickness = -1)
+            # cv2.rectangle(img = frame, 
+            #               pt1 = (0, 0), 
+            #               pt2 = (300, 70), 
+            #               color = (255, 255, 255), 
+            #               thickness = -1)
 
             #plot the info on the frame
             cv2.putText(img = frame, 
@@ -106,13 +126,13 @@ def img_capture(source = StreamType.csi, threshold = 10, folder_count = 10):
                         fontScale = config.font_size, 
                         color = (0, 0, 255), 
                         thickness = config.font_thickness)
-                pass
 
             #horizontally concatenate the frames
             concatenated_frame = cv2.hconcat([frame, cv2.cvtColor(thresholded, cv2.COLOR_GRAY2RGB)])
 
             #show realtime plot of stream
             cv2.imshow('Stream & Motion', concatenated_frame)
+            # cv2.imshow('Original', oframe)
 
             #update frame states
             config.criteria_store['prev_f_color'] = oframe
@@ -134,7 +154,6 @@ if __name__ == "__main__":
                         help="Specify the method for triggering the capture/save function. Choice: {motion, yolo}")
     parser.add_argument('--threshold', type=int, default=20,
                         help="Specify the threhold for frame saving. Ex: 20, 30, 40,...")
-    
     parser.add_argument('--folder_count', type=int, default=10,
                         help="Specify the number of folder images will be randomly saved in.")
     args = parser.parse_args()
