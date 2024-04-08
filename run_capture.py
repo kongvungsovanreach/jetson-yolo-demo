@@ -5,6 +5,7 @@ import numpy as np
 from modules.XEnum import StreamType, CaptureMethod
 from modules.capture_util import random_save, get_scaled_font, Config, xmsg, xerr
 from modules.ui_helper import start_area_configuration
+from modules.const import ENV
 
 #global vars
 config = Config()
