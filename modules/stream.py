@@ -58,5 +58,5 @@ class Stream():
             cap = cv2.VideoCapture(gp, cv2.CAP_GSTREAMER)
             return cap
         elif self.stream_type is StreamType.usb:
-            cap = cv2.VideoCapture(0, cv2.CAP_V4L2 if ENV is 'jetson' else None)
+            cap = cv2.VideoCapture(0, cv2.CAP_V4L2 if ENV == 'jetson' else None)
             return cap
