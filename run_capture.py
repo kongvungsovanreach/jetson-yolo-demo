@@ -22,7 +22,7 @@ def load_local_cap(source, threshold, folder_count):
         'capture_h': 1080,
         'display_w': 1920,
         'display_h': 1080,
-        'frame_rate': 5,
+        'frame_rate': 15,
         'flip_method': 0 
     }
     cap = stream.get_capture(csi_config=config.csi_config)
@@ -30,7 +30,7 @@ def load_local_cap(source, threshold, folder_count):
     # Set desired resolution
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_window_size[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_window_size[1])
-    cap.set(cv2.CAP_PROP_FPS, 2)
+    #cap.set(cv2.CAP_PROP_FPS, 2)
 
     xmsg(f'completed opencv VideoCap. | Cap is opended: {cap.isOpened()}.')
 
@@ -51,7 +51,7 @@ def img_capture(source = StreamType.csi, threshold = 10, folder_count = 10):
     while True:
         count += 1
         ret, frame = cap.read()
-        if (count % 30) != 0:
+        if (count % 15) != 0:
             continue        
 
         oframe = frame.copy()
