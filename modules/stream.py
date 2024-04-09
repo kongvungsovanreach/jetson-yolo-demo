@@ -44,10 +44,10 @@ def gstreamer_pipeline_usb(
 
     return (
         "v4l2src device=/dev/video%d ! "
-        "image/jpeg,format=MJPG,width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
+        "image/jpeg, format=MJPG, width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
         "nvv4l2decoder mjpeg=1 ! "
         "nvvidconv ! "
-        "video/x-raw, format=(string)BGR ! appsink drop=1 "
+        "video/x-raw, format=(string)BGR ! videoconvert ! video/x-raw, format=BGR ! appsink drop=1 "
         % (
             sensor_id,
             capture_width,
