@@ -3,8 +3,47 @@ import time
 import os
 import requests
 import threading
+from modules.stream import Stream, StreamType
+from modules.XEnum import StreamType, CaptureMethod
+from modules.capture_util import random_save, get_scaled_font, Config, xmsg, xerr
+from modules.ui_helper import start_area_configuration
 
-def upload_video(filepath, api_url="http://localhost:9001/upload"):
+#global vars
+config = Config()
+config.cam_window_size = (2560, 1440)
+config.show_window_size = (640, 480)
+config.criteria_store = {'prev_f_gray': None, 'saved_count': 0}
+config.font_size, config.font_thickness = None, None
+
+#load cap for capturing
+def load_local_cap(source, threshold, folder_count):
+    xmsg('start loading opencv VideoCap.')
+    stream = Stream(source)
+    config.csi_config = {
+        'capture_w': 1920,
+        'capture_h': 1080,
+        'display_w': 1920,
+        'display_h': 1080,
+        'frame_rate': 15,
+        'flip_method': 0 
+    }
+    cap = stream.get_capture(csi_config=config.csi_config)
+
+    # Set desired resolution
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_window_size[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_window_size[1])
+    #cap.set(cv2.CAP_PROP_FPS, 2)
+
+    xmsg(f'completed opencv VideoCap. | Cap is opended: {cap.isOpened()}.')
+
+    if not cap.isOpened():
+        xmsg(' cap is not opened!')
+        cap.release()
+        cv2.destroyAllWindows()
+        exit()
+    return cap
+    
+def upload_video(filepath, api_url="http://10.125.145.103:9001/upload"):
   """
   Uploads a video file to the specified API endpoint.
 
@@ -31,7 +70,7 @@ def upload_video(filepath, api_url="http://localhost:9001/upload"):
   upload_thread.start()
 
 
-def record_webcam(output_dir="webcam_recordings", fps=24):
+def record_webcam(output_dir="webcam_recordings", fps=15):
   """
   Records video from webcam and saves it as a file every 10 minutes.
 
@@ -47,13 +86,14 @@ def record_webcam(output_dir="webcam_recordings", fps=24):
 
   # Capture video from webcam
   cap = cv2.VideoCapture(0)
+  # cap = load_local_cap(StreamType.usb, 10, 10)
 
   # Get frame width and height
   width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
   height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
   # Define video codec
-  fourcc = cv2.VideoWriter_fourcc(*"XVID")  # You can change the codec here (e.g., "MJPG")
+  fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec here (e.g., "MJPG")
 
   # Variable to store start time of each recording
   start_time = time.time()
@@ -65,24 +105,27 @@ def record_webcam(output_dir="webcam_recordings", fps=24):
 
     if ret:
       # Display frame
-      cv2.imshow("Video recording", frame)
+      plot_frame = frame.copy()
+      plot_frame = cv2.resize(plot_frame, config.show_window_size)
+      cv2.imshow("Video recording", plot_frame)
 
       # Check for 10 minute interval and create new video writer
       current_hour = int(time.strftime('%H'))
-      if (time.time() - start_time > 60  # 60 seconds * 10 minutes
-          and 8 <= current_hour < 18):  # 60 seconds * 10 minutes
+      if (time.time() - start_time > 5  # 60 seconds * 10 minutes
+          and 7 <= current_hour < 21):  # 60 seconds * 10 minutes
         start_time = time.time()
         video_file_count += 1
 
         # Generate video filename with timestamp
-        filename = os.path.join(output_dir, f"recording_{time.strftime('%Y-%m-%d_%H-%M-%S')}.avi")
-
+        filename = os.path.join(output_dir, f"recording_{time.strftime('%Y-%m-%d_%H-%M-%S')}.mp4")
+        if video_writer is not None:
+            video_writer.release()
         # Create video writer object
         video_writer = cv2.VideoWriter(filename, fourcc, fps, (width, height))
         # filepath = os.path.join(output_dir, filename)
         if prev_saved_file is not None:
             print(prev_saved_file)
-            #upload_video(prev_saved_file)
+            upload_video(prev_saved_file)
             print(f'[msg]: video file saved. Count: {video_file_count}')
         prev_saved_file = filename
       # Write frame to video
