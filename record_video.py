@@ -4,7 +4,7 @@ import os
 import requests
 import threading
 
-def upload_video(filepath, api_url="http://localhost:5000/upload"):
+def upload_video(filepath, api_url="http://localhost:9001/upload"):
   """
   Uploads a video file to the specified API endpoint.
 
@@ -69,7 +69,7 @@ def record_webcam(output_dir="webcam_recordings", fps=24):
 
       # Check for 10 minute interval and create new video writer
       current_hour = int(time.strftime('%H'))
-      if (time.time() - start_time > 5  # 60 seconds * 10 minutes
+      if (time.time() - start_time > 60  # 60 seconds * 10 minutes
           and 8 <= current_hour < 18):  # 60 seconds * 10 minutes
         start_time = time.time()
         video_file_count += 1
@@ -82,7 +82,7 @@ def record_webcam(output_dir="webcam_recordings", fps=24):
         # filepath = os.path.join(output_dir, filename)
         if prev_saved_file is not None:
             print(prev_saved_file)
-            upload_video(prev_saved_file)
+            #upload_video(prev_saved_file)
             print(f'[msg]: video file saved. Count: {video_file_count}')
         prev_saved_file = filename
       # Write frame to video

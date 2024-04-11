@@ -35,5 +35,11 @@ def upload_file():
         print(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return jsonify({'message': 'File successfully uploaded', 'filename': filename})
 
+@app.route('/count_files', methods=['GET'])
+def count_files():
+    # Get the number of files in the uploads folder
+    file_count = len(os.listdir(app.config['UPLOAD_FOLDER']))
+    return jsonify({'file_count': file_count})
+
 if __name__ == '__main__':
-   app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+   app.run(host='0.0.0.0', port=9001, debug=True, threaded=True)
