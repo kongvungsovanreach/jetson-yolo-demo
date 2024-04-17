@@ -8,30 +8,21 @@ from modules.ui_helper import start_area_configuration
 
 #global vars
 config = Config()
-config.cam_window_size = (2560, 1440)
+config.cam_window_size = (1920, 1080)
 config.show_window_size = (640, 480)
 config.criteria_store = {'prev_f_gray': None, 'saved_count': 0}
 config.font_size, config.font_thickness = None, None
 
 #load cap for capturing
-def load_local_cap(source, threshold, folder_count):
+def load_local_cap(source, device_id, threshold, folder_count):
     xmsg('start loading opencv VideoCap.')
-    stream = Stream(source)
+    stream = Stream(source, device_id)
     config.csi_config = {
-        'capture_w': 1920,
-        'capture_h': 1080,
-        'display_w': 1920,
-        'display_h': 1080,
-        'frame_rate': 15,
-        'flip_method': 0 
+        'capture_w': config.cam_window_size[0],
+        'capture_h': config.cam_window_size[1],
+        'frame_rate': 30,
     }
     cap = stream.get_capture(csi_config=config.csi_config)
-
-    # Set desired resolution
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_window_size[0])
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_window_size[1])
-    #cap.set(cv2.CAP_PROP_FPS, 2)
-
     xmsg(f'completed opencv VideoCap. | Cap is opended: {cap.isOpened()}.')
 
     if not cap.isOpened():
@@ -42,9 +33,9 @@ def load_local_cap(source, threshold, folder_count):
     return cap
 
 #capture some frames from stream
-def img_capture(source = StreamType.csi, threshold = 10, folder_count = 10):
-    cap = load_local_cap(source, threshold, folder_count)
-    polygons, frame = start_area_configuration(cap, config.show_window_size)
+def img_capture(source = StreamType.csi, device_id=0, threshold = 10, folder_count = 10):
+    cap = load_local_cap(source, device_id, threshold, folder_count)
+    # polygons, frame = start_area_configuration(cap, config.show_window_size)
     xmsg('start capturing frames and save them.')
 
     count = 0
@@ -58,10 +49,10 @@ def img_capture(source = StreamType.csi, threshold = 10, folder_count = 10):
         frame = cv2.resize(frame, config.show_window_size)
 
         #loop through each polygon
-        for polygon_coords in polygons:
-            pts = np.array(polygon_coords, np.int32)
-            pts = pts.reshape((-1, 1, 2))
-            cv2.fillPoly(frame, [pts], (0, 0, 0))  #fill polygon with black color
+        # for polygon_coords in polygons:
+        #     pts = np.array(polygon_coords, np.int32)
+        #     pts = pts.reshape((-1, 1, 2))
+        #     cv2.fillPoly(frame, [pts], (0, 0, 0))  #fill polygon with black color
 
         if not ret:
             xerr('failed to read the stream.')
@@ -156,9 +147,11 @@ if __name__ == "__main__":
                         help="Specify the threhold for frame saving. Ex: 20, 30, 40,...")
     parser.add_argument('--folder_count', type=int, default=10,
                         help="Specify the number of folder images will be randomly saved in.")
+    parser.add_argument('--device_id', type=int, default=0,
+                        help="The unique id of camera device. eg: 0, 1, 2,...")
     args = parser.parse_args()
 
     if args.method is CaptureMethod.motion:
-        img_capture(args.source, args.threshold, args.folder_count)
+        img_capture(args.source, args.device_id, args.threshold, args.folder_count)
     elif args.method is CaptureMethod.yolo:
        print('yolo method triggered')

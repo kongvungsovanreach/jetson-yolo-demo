@@ -124,8 +124,8 @@ def record_webcam(output_dir="webcam_recordings", fps=15):
         video_writer = cv2.VideoWriter(filename, fourcc, 10, (width, height))
         # filepath = os.path.join(output_dir, filename)
         if prev_saved_file is not None:
-            print(prev_saved_file)
-            upload_video(prev_saved_file)
+            # print(prev_saved_file)
+            # upload_video(prev_saved_file)
             print(f'[msg]: video file saved. Count: {video_file_count}')
         prev_saved_file = filename
       # Write frame to video
