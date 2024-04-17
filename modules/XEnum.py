@@ -26,3 +26,11 @@ class SignalType(Enum):
 
     def __str__(self):
         return self.value
+
+
+class CaptureMethod(Enum):
+    motion = 'motion'
+    yolo = 'yolo'
+
+    def __str__(self):
+        return self.value

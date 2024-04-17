@@ -13,3 +13,5 @@ ON = GPIO.LOW
 #yolo configuration
 PERSON_CLASS_NUM = 0
 FORKLIFT_CLASS_NUM = 2
+
+ENV='jetson'

@@ -1,2 +1,5 @@
 videos/*
 modules/__pycache*
+frames/*
+webcam_recordings/*
+uploads/*
