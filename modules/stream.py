@@ -83,8 +83,9 @@ class Stream():
             cap = cv2.VideoCapture(gp, cv2.CAP_GSTREAMER)
             return cap
         elif self.stream_type is StreamType.usb:
+            return cv2.VideoCapture(0)
             # cap = cv2.VideoCapture(0, cv2.CAP_V4L2 if ENV == 'jetson' else None)
-            gp = gstreamer_pipeline_usb(sensor_id=0, capture_width=capture_width, capture_height=capture_height, display_width=display_width, display_height=display_height,framerate=framerate,flip_method=flip_method)
-            print(gp)
-            cap = cv2.VideoCapture(gp, cv2.CAP_GSTREAMER)
-            return cap
+            # gp = gstreamer_pipeline_usb(sensor_id=0, capture_width=capture_width, capture_height=capture_height, display_width=display_width, display_height=display_height,framerate=framerate,flip_method=flip_method)
+            # print(gp)
+            # cap = cv2.VideoCapture(gp, cv2.CAP_GSTREAMER)
+            # return cap

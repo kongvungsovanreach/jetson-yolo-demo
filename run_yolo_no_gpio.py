@@ -32,8 +32,8 @@ def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
     print('[msg]: Start loading opencv VideoCap.')
     stream = Stream(source)
     csi_config = {
-        'capture_w': 1920,
-        'capture_h': 1080,
+        'capture_w': 640,
+        'capture_h': 320,
         'display_w': 1920,
         'display_h': 1080,
         'frame_rate': 30,
