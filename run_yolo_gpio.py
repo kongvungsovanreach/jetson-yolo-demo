@@ -10,7 +10,7 @@ from threading import Thread
 from modules.capture_util import Config
 
 config = Config()
-config.cam_window_size = (1280, 720)
+config.cam_window_size = (640, 480)
 config.show_window_size = (640, 480)
 
 #variable for controlling ON/OFF signal
@@ -107,16 +107,9 @@ def read_video(source = StreamType.csi, device_id=0, model_name = YoloModelType.
     csi_config = {
         'capture_w': config.cam_window_size[0],
         'capture_h': config.cam_window_size[1],
-        'display_w': 1920,
-        'display_h': 1080,
-        'frame_rate': 30,
-        'flip_method': 0 
+        'frame_rate': 30
     }
     cap = stream.get_capture(csi_config=csi_config)
-    if source is StreamType.usb:
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_window_size[0])
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_window_size[1])
-        #cap.set(cv2.CAP_PROP_FPS, 2)
     print(f'[msg]: Completed opencv VideoCap. | Cap is opened: {cap.isOpened()}')
 
     if not cap.isOpened():

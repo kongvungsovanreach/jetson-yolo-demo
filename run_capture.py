@@ -8,7 +8,7 @@ from modules.ui_helper import start_area_configuration
 
 #global vars
 config = Config()
-config.cam_window_size = (1280, 720)
+config.cam_window_size = (1920, 1080)
 config.show_window_size = (640, 480)
 config.criteria_store = {'prev_f_gray': None, 'saved_count': 0}
 config.font_size, config.font_thickness = None, None
@@ -20,19 +20,9 @@ def load_local_cap(source, device_id, threshold, folder_count):
     config.csi_config = {
         'capture_w': config.cam_window_size[0],
         'capture_h': config.cam_window_size[1],
-        'display_w': 1920,
-        'display_h': 1080,
-        'frame_rate': 15,
-        'flip_method': 0 
+        'frame_rate': 30,
     }
     cap = stream.get_capture(csi_config=config.csi_config)
-
-    # Set desired resolution
-    if source is StreamType.usb:
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_window_size[0])
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_window_size[1])
-        #cap.set(cv2.CAP_PROP_FPS, 2)
-
     xmsg(f'completed opencv VideoCap. | Cap is opended: {cap.isOpened()}.')
 
     if not cap.isOpened():
