@@ -24,7 +24,7 @@ def load_local_cap(source, threshold, folder_count):
         'capture_h': 1080,
         'display_w': 1920,
         'display_h': 1080,
-        'frame_rate': 15,
+        'frame_rate': 30,
         'flip_method': 0 
     }
     cap = stream.get_capture(csi_config=config.csi_config)
@@ -111,8 +111,8 @@ def record_webcam(output_dir="webcam_recordings", fps=15):
 
       # Check for 10 minute interval and create new video writer
       current_hour = int(time.strftime('%H'))
-      if (time.time() - start_time > 5  # 60 seconds * 10 minutes
-          and 7 <= current_hour < 21):  # 60 seconds * 10 minutes
+      if (time.time() - start_time > 600  # 60 seconds * 10 minutes
+          and 7 <= current_hour < 20):  # 60 seconds * 10 minutes
         start_time = time.time()
         video_file_count += 1
 
@@ -121,7 +121,7 @@ def record_webcam(output_dir="webcam_recordings", fps=15):
         if video_writer is not None:
             video_writer.release()
         # Create video writer object
-        video_writer = cv2.VideoWriter(filename, fourcc, fps, (width, height))
+        video_writer = cv2.VideoWriter(filename, fourcc, 10, (width, height))
         # filepath = os.path.join(output_dir, filename)
         if prev_saved_file is not None:
             print(prev_saved_file)
