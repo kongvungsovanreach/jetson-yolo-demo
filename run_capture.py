@@ -1,81 +1,143 @@
 #import required modules
 from modules.stream import Stream, StreamType
 import cv2, time, argparse
-from modules.XEnum import StreamType
-from modules.capture_util import random_save
+import numpy as np
+from modules.XEnum import StreamType, CaptureMethod
+from modules.capture_util import random_save, get_scaled_font, Config, xmsg, xerr
+from modules.ui_helper import start_area_configuration
 
+#global vars
+config = Config()
+config.cam_window_size = (1280, 720)
+config.show_window_size = (640, 480)
+config.criteria_store = {'prev_f_gray': None, 'saved_count': 0}
+config.font_size, config.font_thickness = None, None
 
-#capture some frames from stream
-def img_capture(source = StreamType.csi, threshold = 10, folder_count = 10):
-    #load video cap
-    print('[msg]: Start loading opencv VideoCap.')
-    stream = Stream(source)
-    csi_config = {
-        'capture_w': 1920,
-        'capture_h': 1080,
+#load cap for capturing
+def load_local_cap(source, device_id, threshold, folder_count):
+    xmsg('start loading opencv VideoCap.')
+    stream = Stream(source, device_id)
+    config.csi_config = {
+        'capture_w': config.cam_window_size[0],
+        'capture_h': config.cam_window_size[1],
         'display_w': 1920,
         'display_h': 1080,
-        'frame_rate': 5,
+        'frame_rate': 15,
         'flip_method': 0 
     }
-    cap = stream.get_capture(csi_config=csi_config)
-    print(f'[msg]: Completed opencv VideoCap. | Cap is opended: {cap.isOpened()}')
+    cap = stream.get_capture(csi_config=config.csi_config)
+
+    # Set desired resolution
+    if source is StreamType.usb:
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_window_size[0])
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_window_size[1])
+        #cap.set(cv2.CAP_PROP_FPS, 2)
+
+    xmsg(f'completed opencv VideoCap. | Cap is opended: {cap.isOpened()}.')
 
     if not cap.isOpened():
-        print('[msg]: cap is not opened!')
+        xmsg(' cap is not opened!')
         cap.release()
         cv2.destroyAllWindows()
         exit()
-    
-    print('[msg]: Start capturing frames and save them.')
-    
-    criteria_store = {'prev_f_gray': None, 'saved_count': 0}
+    return cap
+
+#capture some frames from stream
+def img_capture(source = StreamType.csi, device_id=0, threshold = 10, folder_count = 10):
+    cap = load_local_cap(source, device_id, threshold, folder_count)
+    # polygons, frame = start_area_configuration(cap, config.show_window_size)
+    xmsg('start capturing frames and save them.')
+
+    count = 0
     while True:
+        count += 1
         ret, frame = cap.read()
+        if (count % 15) != 0:
+            continue        
+
         oframe = frame.copy()
+        frame = cv2.resize(frame, config.show_window_size)
+
+        #loop through each polygon
+        # for polygon_coords in polygons:
+        #     pts = np.array(polygon_coords, np.int32)
+        #     pts = pts.reshape((-1, 1, 2))
+        #     cv2.fillPoly(frame, [pts], (0, 0, 0))  #fill polygon with black color
+
         if not ret:
-            print('[err]: Failed to read the stream')
+            xerr('failed to read the stream.')
             break
         
         #display the resulting frame
         if frame.size != 0:
+            if not config.font_size:
+                config.font_size, config.font_thickness = get_scaled_font(frame.shape[1], frame.shape[0], size_ratio=0.9e-3, thickness_scale=2e-3)
+                xmsg(f'scaled font size & thickness: {config.font_size} | {config.font_thickness}.')
+
             #convert it to grayscale to ensure the efficiency
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             gray_blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
             #initalize the criteria state to avoid error on first frame
-            if criteria_store['prev_f_gray'] is None:
-                criteria_store['prev_f_gray'] = gray_blurred
+            if config.criteria_store['prev_f_gray'] is None:
+                config.criteria_store['prev_f_gray'] = gray_blurred
                 continue
 
             #compute absolute difference between the current frame and previous frame
-            frame_diff = cv2.absdiff(criteria_store['prev_f_gray'], gray_blurred)
+            frame_diff = cv2.absdiff(config.criteria_store['prev_f_gray'], gray_blurred)
 
             #apply the fixed threshold value
             _, thresholded = cv2.threshold(frame_diff, 20, 255, cv2.THRESH_BINARY)
+            thresholded = cv2.resize(thresholded, config.show_window_size)
             
             #calculate the mean of the pixel differences
             mean_diff = frame_diff.mean()
 
+            #draw rectangle as background color
+            # cv2.rectangle(img = frame, 
+            #               pt1 = (0, 0), 
+            #               pt2 = (300, 70), 
+            #               color = (255, 255, 255), 
+            #               thickness = -1)
+
             #plot the info on the frame
-            cv2.putText(frame, f'FPS: {csi_config["frame_rate"]}  |  Threshold: {threshold}  |  Mean diff: {mean_diff:.2f}', (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            cv2.putText(frame, f'Frame saved count: {criteria_store["saved_count"]}', (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            
+            cv2.putText(img = frame, 
+                        text = f'FPS: {config.csi_config["frame_rate"]} | Threshold: {threshold} | Mean diff: {mean_diff:.2f}', 
+                        org = (10, 20), 
+                        fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                        fontScale = config.font_size, 
+                        color = (0, 0, 255), 
+                        thickness = config.font_thickness)
+            cv2.putText(img = frame, 
+                        text = f'Frame saved count: {config.criteria_store["saved_count"]}', 
+                        org = (10, 40), 
+                        fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                        fontScale = config.font_size, 
+                        color = (0, 0, 255), 
+                        thickness = config.font_thickness)
+
             #check if mean difference exceeds the threshold
             if mean_diff > threshold:
                 random_save(oframe, folder_count)
-                criteria_store['saved_count'] += 1
-                cv2.putText(frame, f'Criteria matched | Frame was saved.', (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-                pass
-            
+                config.criteria_store['saved_count'] += 1
+                cv2.putText(img = frame, 
+                        text = f'Criteria matched | Frame was saved.', 
+                        org = (10,60), 
+                        fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                        fontScale = config.font_size, 
+                        color = (0, 0, 255), 
+                        thickness = config.font_thickness)
+
+            #horizontally concatenate the frames
+            concatenated_frame = cv2.hconcat([frame, cv2.cvtColor(thresholded, cv2.COLOR_GRAY2RGB)])
+
             #show realtime plot of stream
-            show_win_size = (960, 540)
-            cv2.imshow('Stream', cv2.resize(frame, show_win_size))
-            cv2.imshow('Motion', cv2.resize(thresholded, show_win_size))
+            cv2.imshow('Stream & Motion', concatenated_frame)
+            # cv2.imshow('Original', oframe)
 
             #update frame states
-            criteria_store['prev_f_color'] = oframe
-            criteria_store['prev_f_gray'] = gray_blurred
+            config.criteria_store['prev_f_color'] = oframe
+            config.criteria_store['prev_f_gray'] = gray_blurred
 
         key = cv2.waitKey(1)
         if key == ord('q'):
@@ -89,10 +151,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Read video from CSI camera, USB camera, or file.")
     parser.add_argument('--source', type=StreamType, default=StreamType.csi, choices=list(StreamType),
                         help="Specify the video source: 'csi' for CSI camera, 'usb' for USB camera, 'file' for video file")
+    parser.add_argument('--method', type=CaptureMethod, default=CaptureMethod.motion, choices=list(CaptureMethod),
+                        help="Specify the method for triggering the capture/save function. Choice: {motion, yolo}")
     parser.add_argument('--threshold', type=int, default=20,
                         help="Specify the threhold for frame saving. Ex: 20, 30, 40,...")
-    
     parser.add_argument('--folder_count', type=int, default=10,
                         help="Specify the number of folder images will be randomly saved in.")
+    parser.add_argument('--device_id', type=int, default=0,
+                        help="The unique id of camera device. eg: 0, 1, 2,...")
     args = parser.parse_args()
-    img_capture(args.source, args.threshold, args.folder_count)
+
+    if args.method is CaptureMethod.motion:
+        img_capture(args.source, args.device_id, args.threshold, args.folder_count)
+    elif args.method is CaptureMethod.yolo:
+       print('yolo method triggered')

@@ -58,8 +58,9 @@ def gstreamer_pipeline_usb(
 
 #main class for storing stream
 class Stream():
-    def __init__(self, stream_type = StreamType.csi):
+    def __init__(self, stream_type = StreamType.csi, device_id=0):
         self.stream_type = stream_type
+        self.device_id = device_id
 
     def get_capture(self, csi_config = {
         'capture_w': 1920,
@@ -79,13 +80,13 @@ class Stream():
 
         if self.stream_type is StreamType.csi:
             # create the pipeline
-            gp = gstreamer_pipeline_csi(sensor_id=0, capture_width=capture_width, capture_height=capture_height, display_width=display_width, display_height=display_height,framerate=framerate,flip_method=flip_method)
+            gp = gstreamer_pipeline_csi(sensor_id=self.device_id, capture_width=capture_width, capture_height=capture_height, display_width=display_width, display_height=display_height,framerate=framerate,flip_method=flip_method)
             cap = cv2.VideoCapture(gp, cv2.CAP_GSTREAMER)
             return cap
         elif self.stream_type is StreamType.usb:
-            return cv2.VideoCapture(0)
+            return cv2.VideoCapture(self.device_id, cv2.CAP_V4L2)
             # cap = cv2.VideoCapture(0, cv2.CAP_V4L2 if ENV == 'jetson' else None)
-            # gp = gstreamer_pipeline_usb(sensor_id=0, capture_width=capture_width, capture_height=capture_height, display_width=display_width, display_height=display_height,framerate=framerate,flip_method=flip_method)
+            # gp = gstreamer_pipeline_usb(sensor_id=1, capture_width=capture_width, capture_height=capture_height, display_width=display_width, display_height=display_height,framerate=framerate,flip_method=flip_method)
             # print(gp)
             # cap = cv2.VideoCapture(gp, cv2.CAP_GSTREAMER)
             # return cap

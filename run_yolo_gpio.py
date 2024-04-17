@@ -7,7 +7,11 @@ from modules.signal import Signal
 from modules.const import *
 import RPi.GPIO as GPIO
 from threading import Thread
+from modules.capture_util import Config
 
+config = Config()
+config.cam_window_size = (1280, 720)
+config.show_window_size = (640, 480)
 
 #variable for controlling ON/OFF signal
 sending_person_signal, sending_forklift_signal = False, False
@@ -93,22 +97,26 @@ def get_detected_cls(results):
     classes = [int(i.cls.cpu().numpy()) for i in results[0].boxes]
     return classes
 
-def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
+def read_video(source = StreamType.csi, device_id=0, model_name = YoloModelType.yolov8n):
     #load yolo model
     model = load_model(model_name)
 
     #load video cap
     print('[msg]: Start loading opencv VideoCap.')
-    stream = Stream(source)
+    stream = Stream(source, device_id)
     csi_config = {
-        'capture_w': 1920,
-        'capture_h': 1080,
+        'capture_w': config.cam_window_size[0],
+        'capture_h': config.cam_window_size[1],
         'display_w': 1920,
         'display_h': 1080,
-        'frame_rate': 10,
+        'frame_rate': 30,
         'flip_method': 0 
     }
     cap = stream.get_capture(csi_config=csi_config)
+    if source is StreamType.usb:
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_window_size[0])
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_window_size[1])
+        #cap.set(cv2.CAP_PROP_FPS, 2)
     print(f'[msg]: Completed opencv VideoCap. | Cap is opened: {cap.isOpened()}')
 
     if not cap.isOpened():
@@ -125,7 +133,7 @@ def read_video(source = StreamType.csi, model_name = YoloModelType.yolov8n):
         ret, frame = cap.read()
         if not ret:
             print('[err]: Failed to read the stream')
-            break
+            continue
         
         # Display the resulting frame
         if frame.size != 0:
@@ -166,5 +174,7 @@ if __name__ == "__main__":
                         help="Specify the video source: 'csi' for CSI camera, 'usb' for USB camera, 'file' for video file")
     parser.add_argument('--model', type=YoloModelType, default=YoloModelType.yolov8n, choices=list(YoloModelType),
                         help="Specify the Yolov8 models type.")
+    parser.add_argument('--device_id', type=int, default=0,
+                        help="The unique id of camera device. eg: 0, 1, 2,...")
     args = parser.parse_args()
-    read_video(args.source, args.model)
+    read_video(args.source, args.device_id, args.model)
